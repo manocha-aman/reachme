@@ -2,36 +2,27 @@ package am.reachme.service
 
 import akka.actor.ActorLogging
 import akka.actor.Props
-import am.reachme.service AggregateManager.Command
 import am.reachme.service.UserAggregateManager.RegisterUser
-import am.reachme.service.UserAggregateManager.ChangePassword
 import am.reachme.service.UserAggregateManager.GetUser
+import am.reachme.service.AggregateManager.UserCommand
+import am.reachme.service.AggregateManager.UserCommand
 
 object UserAggregateManager {
-  case class RegisterUser(firstName: String, secondName: String, phoneNumber: String, userName: String, password: String) extends Command
-  case class ChangePassword(userName:String, newPassword:String) extends Command
-  case class GetUser(userName:String) extends Command
-  
+  case class RegisterUser(override val userName: String, firstName: String, secondName: String, phoneNumber: String, oldPhoneNumbers:List[String]) extends UserCommand
+  case class ChangeOldNumbers(override val userName: String, phoneNumber: String, oldPhoneNumbers:List[String]) extends UserCommand
+
+  case class GetUser(override val userName: String) extends UserCommand
+
   def props: Props = Props(new UserAggregateManager)
+  var id = "";
 }
 
 class UserAggregateManager extends AggregateManager {
   def processCommand = {
-    case RegisterUser(firstName, lastName, phoneNumber, userName, password) => {
-      val aggregateId =  userName
-      processAggregateCommand(aggregateId, RegisterUser(firstName, lastName, phoneNumber, userName, password))
-    }
-    case ChangePassword(userName, newPassword) => {
-      val aggregateId =  userName
-      processAggregateCommand(userName, ChangePassword(userName, newPassword))
-    }
-    case GetUser(userName) => {
-      val aggregateId =  userName
-      processAggregateCommand(userName, GetUser(userName))
-    }
+    case userCommand: UserCommand => processAggregateCommand(userCommand.userName, userCommand)
   }
 
-  def processAggregateCommand(aggregateId: String, command: Command) = {
+  def processAggregateCommand(aggregateId: String, command: UserCommand) = {
     val maybeChild = context child aggregateId
     maybeChild match {
       case Some(child) =>
@@ -46,6 +37,9 @@ class UserAggregateManager extends AggregateManager {
   def create(id: String) = {
     val agg = context.actorOf(aggregateProps(id), id)
     context watch agg
+    println(agg)
+    var a  = ("" + agg)
+    UserAggregateManager.id = a.split("#")(1)  
     agg
   }
 

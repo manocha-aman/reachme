@@ -5,7 +5,9 @@ import akka.actor.ActorLogging
 import akka.actor.Props
 
 object AggregateManager {
-  trait Command
+  trait  UserCommand {
+    def userName:String
+  }
 }
 
 abstract class AggregateManager extends Actor with ActorLogging {

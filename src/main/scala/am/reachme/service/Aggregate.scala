@@ -9,7 +9,7 @@ import akka.persistence.Persistence
 import am.reachme.service.Aggregate.User
 
 object Aggregate {
-  trait User 
+  trait User
 
   case object NeverCreated extends FSMState {
     override def identifier: String = "Never Created"

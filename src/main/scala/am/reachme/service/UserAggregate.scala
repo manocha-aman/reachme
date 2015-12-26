@@ -9,18 +9,19 @@ import am.reachme.service.Aggregate.NeverCreated
 import am.reachme.service.Aggregate.User
 import am.reachme.service.UserAggregate.UserRegistered
 import am.reachme.service.UserAggregateManager.RegisterUser
-import am.reachme.service.UserAggregateManager.ChangePassword
-import am.reachme.service.UserAggregate.PasswordChanged
+import am.reachme.service.UserAggregateManager.ChangeOldNumbers
 import am.reachme.service.UserAggregate.EmptyUser
 import am.reachme.service.UserAggregate.NonEmptyUser
+import am.reachme.service.UserAggregate.OldNumbersChanged
 import am.reachme.service.UserAggregateManager.GetUser
+import am.reachme.service.UserAggregate.NonEmptyUser
 
 object UserAggregate {
 
   object EmptyUser extends User
-  case class NonEmptyUser(firstName: String, lastName: String, phoneNumber: String, userName: String, password: String) extends User
-  case class UserRegistered(firstName: String, secondName: String, phoneNumber: String, userName: String, password: String) extends Event
-  case class PasswordChanged(userName: String, newPassword: String) extends Event
+  case class NonEmptyUser(userName: String, firstName: String, lastName: String, phoneNumber: String, oldPhoneNumbers: List[String]) extends User
+  case class UserRegistered(userName: String, firstName: String, secondName: String, phoneNumber: String, oldPhoneNumbers: List[String]) extends Event
+  case class OldNumbersChanged(userName: String, oldPhoneNumbers: List[String]) extends Event
 
   def props(id: String): Props = Props(new UserAggregate(id))
 
@@ -28,36 +29,48 @@ object UserAggregate {
 
 class UserAggregate(id: String) extends Aggregate {
 
-  override def persistenceId: String = id
+  override def persistenceId: String =  { id}
 
   override def domainEventClassTag: ClassTag[Aggregate.Event] = classTag[Aggregate.Event]
 
   startWith(NeverCreated, EmptyUser)
 
   when(NeverCreated) {
-    case Event(RegisterUser(firstName, lastName, phoneNumber, userName, password), _) =>
-      goto(Created) applying UserRegistered(firstName, lastName, phoneNumber, userName, password)
+    case Event(RegisterUser(userName, firstName, lastName, phoneNumber, oldPhoneNumbers), user) => {
+      val originalSender = sender
+      goto(Created) applying UserRegistered(userName, firstName, lastName, phoneNumber, oldPhoneNumbers) andThen {
+        case _ => originalSender ! stateData
+      }
+    }
     case Event(GetUser, user) ⇒
       stay replying user
   }
 
   when(Created) {
-    case Event(ChangePassword(userName, newPassword), _) =>
-      stay applying PasswordChanged(userName, newPassword)
-    case Event(GetUser(userName), data) ⇒
+    case Event(GetUser(userName), data) =>
       stay replying data
+    case Event(ChangeOldNumbers(userName, phoneNumber, oldPhoneNumbers), user) => {
+      val originalSender = sender
+      stay applying OldNumbersChanged(userName, oldPhoneNumbers) andThen {
+        case _ => originalSender ! stateData
+      }
+    }
+    case _ =>
+      stay replying "unhandled event + "
   }
 
   def applyEvent(domainEvent: Aggregate.Event, currentUser: Aggregate.User): Aggregate.User = {
     domainEvent match {
-      case UserRegistered(firstName, lastName, phoneNumber, userName, password) =>
-        NonEmptyUser(firstName, lastName, phoneNumber, userName, password)
+      case UserRegistered(userName, firstName, lastName, phoneNumber, oldPhoneNumbers) =>
+        NonEmptyUser(userName, firstName, lastName, phoneNumber, oldPhoneNumbers)
 
-      case PasswordChanged(userName, newPassword) =>
+      case OldNumbersChanged(userName, oldNumbers) => {
         currentUser match {
-          case user: NonEmptyUser =>
-            user.copy(password = newPassword)
+          case oldUser: NonEmptyUser =>
+            oldUser.copy(oldPhoneNumbers = oldNumbers)
+
         }
+      }
     }
   }
 
