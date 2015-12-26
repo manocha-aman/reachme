@@ -23,7 +23,9 @@ object Aggregate {
     override def identifier: String = "Removed"
   }
 
-  trait Event
+  trait Event {
+    val time = System.currentTimeMillis()
+  }
 }
 abstract class Aggregate extends PersistentFSM[FSMState, User, Event]
 		
