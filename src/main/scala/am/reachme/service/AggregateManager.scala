@@ -6,7 +6,7 @@ import akka.actor.Props
 
 object AggregateManager {
   trait  UserCommand {
-    def userName:String
+    def phoneNumber:String
   }
 }
 
@@ -16,5 +16,4 @@ abstract class AggregateManager extends Actor with ActorLogging {
   def aggregateProps(id: String): Props
 
   def receive = processCommand
-
 }

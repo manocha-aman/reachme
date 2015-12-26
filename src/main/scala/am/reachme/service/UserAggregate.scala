@@ -19,12 +19,11 @@ import am.reachme.service.UserAggregate.NonEmptyUser
 object UserAggregate {
 
   object EmptyUser extends User
-  case class NonEmptyUser(userName: String, firstName: String, lastName: String, phoneNumber: String, oldPhoneNumbers: List[String]) extends User
-  case class UserRegistered(userName: String, firstName: String, secondName: String, phoneNumber: String, oldPhoneNumbers: List[String]) extends Event
-  case class OldNumbersChanged(userName: String, oldPhoneNumbers: List[String]) extends Event
+  case class NonEmptyUser(phoneNumber: String, firstName: String, lastName: String, oldPhoneNumbers: List[String]) extends User
+  case class UserRegistered(phoneNumber: String, firstName: String, lastName: String, oldPhoneNumbers: List[String]) extends Event
+  case class OldNumbersChanged(phoneNumber: String, oldPhoneNumbers: List[String]) extends Event
 
   def props(id: String): Props = Props(new UserAggregate(id))
-
 }
 
 class UserAggregate(id: String) extends Aggregate {
@@ -36,9 +35,9 @@ class UserAggregate(id: String) extends Aggregate {
   startWith(NeverCreated, EmptyUser)
 
   when(NeverCreated) {
-    case Event(RegisterUser(userName, firstName, lastName, phoneNumber, oldPhoneNumbers), user) => {
+    case Event(RegisterUser(phoneNumber, firstName, lastName, oldPhoneNumbers), user) => {
       val originalSender = sender
-      goto(Created) applying UserRegistered(userName, firstName, lastName, phoneNumber, oldPhoneNumbers) andThen {
+      goto(Created) applying UserRegistered(phoneNumber, firstName, lastName, oldPhoneNumbers) andThen {
         case _ => originalSender ! stateData
       }
     }
@@ -47,11 +46,11 @@ class UserAggregate(id: String) extends Aggregate {
   }
 
   when(Created) {
-    case Event(GetUser(userName), data) =>
+    case Event(GetUser(phoneNumber), data) =>
       stay replying data
-    case Event(ChangeOldNumbers(userName, phoneNumber, oldPhoneNumbers), user) => {
+    case Event(ChangeOldNumbers(phoneNumber, oldPhoneNumbers), user) => {
       val originalSender = sender
-      stay applying OldNumbersChanged(userName, oldPhoneNumbers) andThen {
+      stay applying OldNumbersChanged(phoneNumber, oldPhoneNumbers) andThen {
         case _ => originalSender ! stateData
       }
     }
@@ -61,10 +60,10 @@ class UserAggregate(id: String) extends Aggregate {
 
   def applyEvent(domainEvent: Aggregate.Event, currentUser: Aggregate.User): Aggregate.User = {
     domainEvent match {
-      case UserRegistered(userName, firstName, lastName, phoneNumber, oldPhoneNumbers) =>
-        NonEmptyUser(userName, firstName, lastName, phoneNumber, oldPhoneNumbers)
+      case UserRegistered(phoneNumber, firstName, lastName, oldPhoneNumbers) =>
+        NonEmptyUser(phoneNumber, firstName, lastName, oldPhoneNumbers)
 
-      case OldNumbersChanged(userName, oldNumbers) => {
+      case OldNumbersChanged(phoneNumber, oldNumbers) => {
         currentUser match {
           case oldUser: NonEmptyUser =>
             oldUser.copy(oldPhoneNumbers = oldNumbers)

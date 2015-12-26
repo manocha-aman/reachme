@@ -6,20 +6,22 @@ import am.reachme.service.UserAggregateManager.RegisterUser
 import am.reachme.service.UserAggregateManager.GetUser
 import am.reachme.service.AggregateManager.UserCommand
 import am.reachme.service.AggregateManager.UserCommand
+import am.reachme.service.Aggregate.User
 
 object UserAggregateManager {
-  case class RegisterUser(override val userName: String, firstName: String, secondName: String, phoneNumber: String, oldPhoneNumbers:List[String]) extends UserCommand
-  case class ChangeOldNumbers(override val userName: String, phoneNumber: String, oldPhoneNumbers:List[String]) extends UserCommand
+  case class RegisterUser(override val phoneNumber: String, firstName: String, secondName: String, oldPhoneNumbers: List[String]) extends UserCommand
+  case class ChangeOldNumbers(override val phoneNumber: String, oldPhoneNumbers: List[String]) extends UserCommand
 
-  case class GetUser(override val userName: String) extends UserCommand
+  case class GetUser(override val phoneNumber: String) extends UserCommand
 
   def props: Props = Props(new UserAggregateManager)
-  var id = "";
 }
 
 class UserAggregateManager extends AggregateManager {
+  val users: Map[String, User] = Map.empty
+
   def processCommand = {
-    case userCommand: UserCommand => processAggregateCommand(userCommand.userName, userCommand)
+    case userCommand: UserCommand => processAggregateCommand(userCommand.phoneNumber, userCommand)
   }
 
   def processAggregateCommand(aggregateId: String, command: UserCommand) = {
@@ -38,8 +40,6 @@ class UserAggregateManager extends AggregateManager {
     val agg = context.actorOf(aggregateProps(id), id)
     context watch agg
     println(agg)
-    var a  = ("" + agg)
-    UserAggregateManager.id = a.split("#")(1)  
     agg
   }
 

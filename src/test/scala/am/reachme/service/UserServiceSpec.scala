@@ -25,17 +25,18 @@ import scala.collection._
 import scala.collection.convert.decorateAsScala._
 import java.util.concurrent.ConcurrentHashMap
 import am.reachme.service.UserAggregate.OldNumbersChanged
+import am.reachme.service.Aggregate.User
 
 class UserServiceSpec extends FlatSpec with BeforeAndAfterAll {
 
-  val users: concurrent.Map[(String, String), ViewUser] = new ConcurrentHashMap().asScala
-
   implicit val actorSystem = ActorSystem("userServiceSpec-system")
 
-  implicit val timeout = Timeout(10 seconds)
+  implicit val timeout = Timeout(2 seconds)
 
   implicit val executionContext = actorSystem.dispatcher
   implicit val mat = ActorMaterializer()(actorSystem)
+  val manager = TestActorRef(UserAggregateManager.props)
+
   override def afterAll = {
     actorSystem.terminate()
   }
@@ -43,79 +44,29 @@ class UserServiceSpec extends FlatSpec with BeforeAndAfterAll {
   override def beforeAll = {
     val path: Path = Path(".\\target\\example\\journal")
     path.toAbsolute.deleteRecursively()
-    view()
+    val view = View
+    view.startView(actorSystem, mat)
   }
 
   "UserService" should "create new user" in {
-    val manager = TestActorRef(UserAggregateManager.props)
+    val registerUserCommand: RegisterUser = RegisterUser(phoneNumber = "9899901287", firstName = "aman", secondName = "Manocha", oldPhoneNumbers = List("931215035"))
 
-    val registerUserCommand = RegisterUser(userName = "amanmanocha", firstName = "aman", secondName = "Manocha", phoneNumber = "9899901287", oldPhoneNumbers = List("931215035"))
+    val future = (manager ? registerUserCommand).mapTo[User]
 
-    val future = (manager ? registerUserCommand).mapTo[am.reachme.service.Aggregate.User]
+    val NonEmptyUser(phoneNumber, _, _, _) = Await.result(future, 5 seconds)
 
-    val NonEmptyUser(usrName, _, _, _, _) = Await.result(future, 5 seconds)
-
-    assert(usrName == "amanmanocha")
-
+    assert(phoneNumber == "9899901287")
   }
 
   "it" should "change old numbers" in {
+    val addOldNumberCommand: ChangeOldNumbers = ChangeOldNumbers(phoneNumber = "9899901287", oldPhoneNumbers = List("931215035", "13128981341"))
 
-    val manager = TestActorRef(UserAggregateManager.props, "UserService-test-actor")
+    val future = (manager ? addOldNumberCommand).mapTo[User]
 
-    val addOldNumberCommand = ChangeOldNumbers(userName = "amanmanocha", phoneNumber = "9899901287", oldPhoneNumbers = List("931215035", "13128981341"))
-
-    val future = (manager ? addOldNumberCommand).mapTo[am.reachme.service.Aggregate.User]
-
-    val NonEmptyUser(usrName, _, _, _, oldNumbers) = Await.result(future, 5 seconds)
-  }
-
-  def view(): Unit = {
-
-    val readJournal = PersistenceQuery(actorSystem).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
-
-    readJournal.eventsByPersistenceId("amanmanocha", 0L, 100L)
-      .map(_.event)
-      .runForeach { x => update(x) }
-  }
-
-  def update(event: Any) = {
-
-    event match {
-      case UserRegistered(userName, firstName, lastName, phoneNumber, oldPhoneNumbers) => {
-        val user = new ViewUser(userName, firstName, lastName, phoneNumber, oldPhoneNumbers)
-        users += ((userName, "") -> user)
-        addOldNumbersAsKeys(user)
-      }
-      case OldNumbersChanged(userName, oldNumbers) => {
-        val user = users((userName, ""))
-
-        removeOldNumbersAsKeys(user)
-        user.oldPhoneNumbers = oldNumbers;
-        addOldNumbersAsKeys(user)
-
-        println(s"chnaged $users")
-        println(users(("aman", "13128981341")))
-      }
-      case _ =>
-    }
-  }
-
-  def addOldNumbersAsKeys(user: ViewUser) = {
-    user.oldPhoneNumbers.foreach {
-      number =>
-        {
-          users += ((user.firstName, number) -> user)
-          users += ((user.lastName, number) -> user)
-        }
-    }
-  }
-
-  def removeOldNumbersAsKeys(user: ViewUser) = {
-    user.oldPhoneNumbers.foreach { number =>
-      users -= ((user.firstName, number))
-      users -= ((user.lastName, number))
-    }
+    val NonEmptyUser(phoneNumber, _, _, oldNumbers) = Await.result(future, 5 seconds)
+    
+    assert(phoneNumber == "9899901287")
+    assert(oldNumbers == List("931215035", "13128981341"))
   }
 
 }
