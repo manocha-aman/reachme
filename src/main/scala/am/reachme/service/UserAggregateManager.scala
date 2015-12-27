@@ -18,8 +18,6 @@ object UserAggregateManager {
 }
 
 class UserAggregateManager extends AggregateManager {
-  val users: Map[String, User] = Map.empty
-
   def processCommand = {
     case userCommand: UserCommand => processAggregateCommand(userCommand.phoneNumber, userCommand)
   }

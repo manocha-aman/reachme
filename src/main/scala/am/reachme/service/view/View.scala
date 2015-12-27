@@ -10,7 +10,7 @@ import akka.stream.ActorMaterializer
 import am.reachme.service.UserAggregate.OldNumbersChanged
 import am.reachme.service.UserAggregate.UserRegistered
 import am.reachme.service.view.UserRepository
-case class ViewUser(phoneNumber: String, firstName: String, lastName: String, var oldPhoneNumbers: List[String])
+import am.reachme.service.view.ViewUser
 
 object View {
 

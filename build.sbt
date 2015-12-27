@@ -7,10 +7,11 @@ organization := "am.reachme"
 scalaVersion := "2.11.7"
 
 resolvers ++= Seq(
-  "snapshots"           at "http://oss.sonatype.org/content/repositories/snapshots",
-  "releases"            at "http://oss.sonatype.org/content/repositories/releases",
-  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
-  "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
+  "snapshots"           		at "http://oss.sonatype.org/content/repositories/snapshots",
+  "releases"            		at "http://oss.sonatype.org/content/repositories/releases",
+  "Typesafe Repository"			at "http://repo.typesafe.com/typesafe/releases/",
+  "Akka Snapshot Repository" 	at "http://repo.akka.io/snapshots/",
+  "Spray Repository" 			at "http://repo.spray.io"
 )
 
 seq(Revolver.settings: _*)
@@ -24,6 +25,7 @@ parallelExecution in Test := false
 libraryDependencies ++= {
   val sprayVersion = "1.3.1"
   val akkaVersion = "2.4-SNAPSHOT"
+  val Json4sVersion = "3.3.0"
   Seq(
   	"org.iq80.leveldb" 		  %    "leveldb" % "0.7",
   	"org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8",
@@ -31,7 +33,6 @@ libraryDependencies ++= {
     "org.slf4j"               %   "slf4j-api"       % "1.7.7",
     "ch.qos.logback"          %   "logback-core"    % "1.1.2",
     "ch.qos.logback"          %   "logback-classic" % "1.1.2",
-    "org.json4s"              %%  "json4s-native"   % "3.2.10",
     "joda-time"               %   "joda-time"       % "2.4",
     "org.joda"                %   "joda-convert"    % "1.7",
     "com.typesafe.akka"       %%  "akka-actor"      % akkaVersion,
@@ -41,6 +42,12 @@ libraryDependencies ++= {
     "com.typesafe.akka"       %% "akka-persistence" % akkaVersion,
     "com.typesafe.akka" 	  %% "akka-persistence-query-experimental" % akkaVersion,
     "org.scalatest"           %%  "scalatest"       % "2.2.1" % "test",
-    "com.github.t3hnar"       %%  "scala-bcrypt"    % "2.4"
+    "com.github.t3hnar"       %%  "scala-bcrypt"    % "2.4",
+    "io.spray" 				  %%  "spray-testkit" 	% sprayVersion % "test",
+    "io.spray" 				  %%  "spray-can" 		% sprayVersion,
+    "io.spray" 				  %%  "spray-routing" 	% sprayVersion,
+    "io.spray" 				  %%  "spray-json" 		% "1.3.1",
+    "org.json4s" 			  %% "json4s-native" 	% Json4sVersion,
+    "org.json4s" 			  %% "json4s-ext" 		% Json4sVersion
   )
 }
