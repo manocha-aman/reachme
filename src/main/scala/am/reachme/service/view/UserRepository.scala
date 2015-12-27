@@ -11,7 +11,12 @@ object UserRepository {
     users += ((user.phoneNumber, "") -> user)
     addOldNumbersAsKeys(user)
   }
-
+  
+  def findByFirstName(firstName:String, phoneNumber:String) = {
+      println(users)
+      users((firstName, phoneNumber))
+  }
+  
   def updateOldNumbers(phoneNumber: String, oldNumbers:List[String]) = {
     val user = users((phoneNumber, ""))
 

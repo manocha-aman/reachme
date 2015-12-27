@@ -16,12 +16,6 @@ object View {
 
   val usersRepository = UserRepository
 
-  def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
-    startView(system, materializer)
-  }
-
   def startView(system: ActorSystem, materializer: ActorMaterializer) {
     val readJournal = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
     readJournal.eventsByTag("UserEvents", 0L)

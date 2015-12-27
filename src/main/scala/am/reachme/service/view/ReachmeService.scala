@@ -31,12 +31,14 @@ trait ReachmeService extends HttpService {
     path("users") {
       post {
         entity(as[ViewUser]) { viewUser =>
-
           doCreate(viewUser)
-
-          //complete(savedUser)
         }
-      }
+      } ~
+        get {
+          parameters('firstName, 'oldNumber) { (firstName, oldNumber) =>
+            find(firstName, oldNumber)
+          }
+        }
     }
   }
 
@@ -52,6 +54,15 @@ trait ReachmeService extends HttpService {
 
       val user = Await.result(future, 5 seconds)
       user
+    }
+
+  }
+
+  def find(firstName: String, phoneNumber: String) = {
+
+    complete {
+      val view = UserRepository
+      view.findByFirstName(firstName, phoneNumber)
     }
 
   }
